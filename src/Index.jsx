@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, idFromUrl, pretty, pad, TYPE, typeStyle, MAX_DEX, loadTypes } from './api.js'
 import Card from './Card.jsx'
 
@@ -33,6 +33,21 @@ export default function Index({ query, setQuery, typeFilter, setTypeFilter, show
 
   const waiting = !all.length || (typeFilter && !types)
   const page = filtered.slice(0, shown)
+  const hasMore = !waiting && shown < filtered.length
+  const sentinelRef = useRef(null)
+
+  // Infinite scroll: load the next page when the sentinel nears the viewport.
+  useEffect(() => {
+    if (!hasMore) return
+    const el = sentinelRef.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      entries => { if (entries[0].isIntersecting) setShown(s => s + PAGE) },
+      { rootMargin: '300px 0px' }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [hasMore])
 
   const onType = t => {
     setTypeFilter(typeFilter === t ? null : t)
@@ -76,9 +91,16 @@ export default function Index({ query, setQuery, typeFilter, setTypeFilter, show
         {waiting
           ? Array.from({ length: 12 }, (_, i) => <div key={i} className="skel skel-card" />)
           : page.length
-            ? page.map(m => (
-                <Card key={m.id} id={m.id} name={m.name} types={types?.byId.get(m.id) || []} />
-              ))
+            ? (
+              <>
+                {page.map(m => (
+                  <Card key={m.id} id={m.id} name={m.name} types={types?.byId.get(m.id) || []} />
+                ))}
+                {hasMore && Array.from({ length: Math.min(filtered.length - shown, 8) }, (_, i) => (
+                  <div key={`skel-${i}`} className="skel skel-card" />
+                ))}
+              </>
+            )
             : (
               <div className="empty">
                 <span className="ball" aria-hidden="true" />
@@ -88,11 +110,7 @@ export default function Index({ query, setQuery, typeFilter, setTypeFilter, show
             )}
       </div>
 
-      {!waiting && shown < filtered.length && (
-        <div className="more">
-          <button className="btn" onClick={() => setShown(shown + PAGE)}>Load more</button>
-        </div>
-      )}
+      {hasMore && <div ref={sentinelRef} className="scroll-sentinel" aria-hidden="true" />}
     </>
   )
 }

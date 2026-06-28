@@ -333,8 +333,9 @@ h1, h2, h3, .name, .brand__name {
   max-width: 100%; max-height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 9px 11px oklch(var(--shadow-col) / 0.22));
-  transition: transform 0.45s var(--ease);
+  transition: transform 0.45s var(--ease), opacity 0.3s ease;
 }
+.art .img-skel { position: absolute; inset: 4px; border-radius: 12px; }
 .card .name { position: relative; z-index: 1; margin: 0.55rem 0 0; font-size: 1.05rem; font-weight: 600; text-align: center; }
 .card:hover, .card:focus-visible {
   transform: translateY(-5px);
@@ -679,6 +680,7 @@ h1, h2, h3, .name, .brand__name {
 }
 @keyframes shimmer { to { background-position: -200% 0; } }
 .skel-card { height: 214px; border-radius: 16px; }
+.scroll-sentinel { height: 1px; width: 100%; }
 
 /* =========================================================================
    Responsive
