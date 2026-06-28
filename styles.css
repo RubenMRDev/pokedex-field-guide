@@ -259,11 +259,24 @@ h1, h2, h3, .name, .brand__name {
   color: var(--ink-faint); font-weight: 700;
 }
 .region {
-  font: inherit; font-size: 0.95rem; color: var(--ink); cursor: pointer;
-  background: var(--screen-2); border: 2px solid var(--line); border-radius: 999px;
-  padding: 0.5rem 0.9rem;
+  font: inherit; font-size: 1rem; font-weight: 500; color: var(--ink); cursor: pointer;
+  appearance: none; -webkit-appearance: none; -moz-appearance: none;
+  background-color: var(--screen-2);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23a39b94' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  border: 2px solid var(--line); border-radius: 999px;
+  padding: 0.55rem 2.4rem 0.55rem 1.1rem;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s, color 0.2s;
 }
-.region:focus { outline: none; border-color: var(--poke-blue-deep); }
+.region option { color: var(--ink); background: var(--screen-2); }
+.region:hover { border-color: var(--ink-faint); }
+.region:focus { outline: none; border-color: var(--poke-blue-deep); box-shadow: 0 0 0 4px oklch(0.70 0.13 232 / 0.16); }
+.region.is-active {
+  color: oklch(0.99 0.01 90); font-weight: 600;
+  background-color: var(--poke-red); border-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
 .caught-toggle {
   align-self: flex-end;
   font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer;

@@ -88,7 +88,7 @@ export default function Index({
           </div>
           <div className="filter">
             <label htmlFor="region">Region</label>
-            <select id="region" value={region || ''}
+            <select id="region" className={region ? 'region is-active' : 'region'} value={region || ''}
                     onChange={e => { setRegion(e.target.value || null); setShown(PAGE) }}>
               <option value="">All regions</option>
               {REGIONS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
