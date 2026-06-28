@@ -136,6 +136,19 @@ const REGION = {
 }
 export const regionOf = gen => REGION[gen] || pretty(gen || '')
 
+// National-dex id ranges per region — lets us filter by region with no extra requests.
+export const REGIONS = [
+  { id: 'kanto', name: 'Kanto', min: 1, max: 151 },
+  { id: 'johto', name: 'Johto', min: 152, max: 251 },
+  { id: 'hoenn', name: 'Hoenn', min: 252, max: 386 },
+  { id: 'sinnoh', name: 'Sinnoh', min: 387, max: 493 },
+  { id: 'unova', name: 'Unova', min: 494, max: 649 },
+  { id: 'kalos', name: 'Kalos', min: 650, max: 721 },
+  { id: 'alola', name: 'Alola', min: 722, max: 809 },
+  { id: 'galar', name: 'Galar', min: 810, max: 905 },
+  { id: 'paldea', name: 'Paldea', min: 906, max: 1025 },
+]
+
 export function genderText(rate) {
   if (rate < 0) return 'Genderless'
   const f = (rate / 8) * 100

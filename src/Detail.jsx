@@ -2,17 +2,80 @@ import { useEffect, useRef, useState } from 'react'
 import {
   api, pretty, pad, typeStyle, flattenEvo, evoCondition, STAT_LABELS, MAX_DEX,
   loadTypes, defenseChart, multLabel, levelMoves, regionOf, genderText, abilityEffect,
-  flavorEntries, evYield, formLabel, SPRITE,
+  flavorEntries, evYield, formLabel, SPRITE, TYPE,
 } from './api.js'
+import { useCaughtStore, isCaught, toggleCaught } from './caught.js'
+
+const STAT_ABBR = {
+  hp: 'HP', attack: 'Atk', defense: 'Def',
+  'special-attack': 'SpA', 'special-defense': 'SpD', speed: 'Spe',
+}
+
+// Hexagonal base-stats radar.
+function StatRadar({ stats, color }) {
+  const MAX = 200, R = 82, cx = 130, cy = 108
+  const ang = i => (-90 + i * (360 / stats.length)) * Math.PI / 180
+  const pt = (i, r) => [cx + Math.cos(ang(i)) * r, cy + Math.sin(ang(i)) * r]
+  const shape = stats.map((s, i) => pt(i, Math.min(1, s.value / MAX) * R).join(',')).join(' ')
+  const rings = [0.25, 0.5, 0.75, 1].map(f => stats.map((_, i) => pt(i, f * R).join(',')).join(' '))
+  const anchor = x => (x > cx + 3 ? 'start' : x < cx - 3 ? 'end' : 'middle')
+  return (
+    <svg className="radar" viewBox="0 0 260 226" role="img" aria-label="Base stats radar">
+      {rings.map((pts, i) => <polygon key={i} className="radar__ring" points={pts} />)}
+      {stats.map((_, i) => { const [x, y] = pt(i, R); return <line key={i} className="radar__axis" x1={cx} y1={cy} x2={x} y2={y} /> })}
+      <polygon className="radar__area" points={shape}
+               style={{ fill: `color-mix(in oklab, ${color}, transparent 68%)`, stroke: color }} />
+      {stats.map((s, i) => {
+        const [lx, ly] = pt(i, R + 18)
+        return (
+          <text key={i} className="radar__label" x={lx} y={ly} textAnchor={anchor(lx)} dominantBaseline="middle">
+            <tspan x={lx} dy="-0.3em">{s.label}</tspan>
+            <tspan x={lx} dy="1.15em" className="radar__val">{s.value}</tspan>
+          </text>
+        )
+      })}
+    </svg>
+  )
+}
+
+// One move row that fetches its details on first expand.
+function MoveRow({ name, level }) {
+  const [open, setOpen] = useState(false)
+  const [info, setInfo] = useState(null)
+  const toggle = () => { setOpen(o => !o); if (!info) api(`/move/${name}`).then(setInfo).catch(() => setInfo({})) }
+  return (
+    <div className={`move ${open ? 'is-open' : ''}`}>
+      <button className="move__head" onClick={toggle} aria-expanded={open}>
+        <span className="move__lv mono">{level > 0 ? `Lv ${level}` : '—'}</span>
+        <span className="move__name">{pretty(name)}</span>
+        <span className="move__chev" aria-hidden="true">▸</span>
+      </button>
+      {open && (
+        <div className="move__info">
+          {info
+            ? <>
+                {info.type && <span className="type type--sm" style={typeStyle(info.type.name)}>{info.type.name}</span>}
+                {info.damage_class && <span className="move__tag">{pretty(info.damage_class.name)}</span>}
+                <span className="move__tag">Power {info.power ?? '—'}</span>
+                <span className="move__tag">Acc {info.accuracy ?? '—'}</span>
+                <span className="move__tag">PP {info.pp ?? '—'}</span>
+              </>
+            : <span className="move__tag">Loading…</span>}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Detail({ name }) {
   const [data, setData] = useState(null)   // { p, s, types, abilities, evo, locations }
   const [error, setError] = useState(null)
   const [shiny, setShiny] = useState(false)
   const [playing, setPlaying] = useState(false)
-  const [formName, setFormName] = useState(null)  // selected variety (null = route default)
+  const [formName, setFormName] = useState(null)
   const [flavorIdx, setFlavorIdx] = useState(null)
   const audioRef = useRef(null)
+  useCaughtStore()
 
   useEffect(() => {
     let alive = true
@@ -49,16 +112,22 @@ export default function Detail({ name }) {
     document.title = data ? `${pretty(data.p.name)} · Pokédex` : 'Pokédex'
   }, [data])
 
+  // Stop the cry (and the lens) when leaving the page.
+  useEffect(() => () => {
+    if (audioRef.current) audioRef.current.pause()
+    window.dispatchEvent(new Event('cry-stop'))
+  }, [])
+
   const playCry = () => {
     const url = data?.p.cries?.latest
     if (!url) return
     if (!audioRef.current) {
       audioRef.current = new Audio(url)
       audioRef.current.volume = 0.4
-      audioRef.current.addEventListener('ended', () => setPlaying(false))
+      audioRef.current.addEventListener('ended', () => { setPlaying(false); window.dispatchEvent(new Event('cry-stop')) })
     }
     audioRef.current.currentTime = 0
-    audioRef.current.play().then(() => setPlaying(true)).catch(() => {})
+    audioRef.current.play().then(() => { setPlaying(true); window.dispatchEvent(new Event('cry-play')) }).catch(() => {})
   }
 
   if (error) {
@@ -92,9 +161,14 @@ export default function Detail({ name }) {
 
   const { p, s, types, abilities, evo, locations } = data
   const primary = p.types[0]?.type.name || 'normal'
+  const primaryColor = TYPE[primary] || '#777777'
   const genus = s?.genera.find(g => g.language.name === 'en')?.genus || 'Pokémon'
   const bst = p.stats.reduce((sum, st) => sum + st.base_stat, 0)
   const evs = evYield(p)
+  const radarStats = p.stats.map(st => ({ label: STAT_ABBR[st.stat.name] || pretty(st.stat.name), value: st.base_stat }))
+
+  const cid = s?.id || p.id
+  const caught = isCaught(cid)
 
   const entries = flavorEntries(s)
   const fIdx = flavorIdx ?? Math.max(0, entries.length - 1)
@@ -159,7 +233,7 @@ export default function Detail({ name }) {
               {s.is_mythical && <span className="legend legend--myth">Mythical</span>}
             </p>
           )}
-          <p className="dex-big mono">№ {pad(s?.id || p.id)}</p>
+          <p className="dex-big mono">№ {pad(cid)}</p>
           <h1 className="name">{pretty(s?.name || p.name)}</h1>
           <p className="genus">{genus}</p>
 
@@ -184,6 +258,13 @@ export default function Detail({ name }) {
             >
               <span className="cry__bars" aria-hidden="true"><i /><i /><i /></span>
               Hear cry
+            </button>
+            <button
+              className={`catch-btn ${caught ? 'is-on' : ''}`}
+              aria-pressed={caught}
+              onClick={() => toggleCaught(cid)}
+            >
+              <span className="ball" aria-hidden="true" /> {caught ? 'Caught' : 'Catch'}
             </button>
             <div className="types">
               {p.types.map(t => (
@@ -236,18 +317,7 @@ export default function Detail({ name }) {
 
           <section className="block">
             <h2>Base stats <span className="bst">Total {bst}</span></h2>
-            {p.stats.map(st => {
-              const pct = Math.min(100, (st.base_stat / 200) * 100)
-              return (
-                <div className="stat" key={st.stat.name}>
-                  <span className="stat__label">{STAT_LABELS[st.stat.name] || pretty(st.stat.name)}</span>
-                  <span className="stat__track">
-                    <span className="stat__fill" style={{ width: `${pct}%`, ...typeStyle(primary) }} />
-                  </span>
-                  <span className="stat__num mono">{st.base_stat}</span>
-                </div>
-              )
-            })}
+            <div className="stats-viz"><StatRadar stats={radarStats} color={primaryColor} /></div>
             {evs && <p className="ev">EV yield: <b>{evs}</b></p>}
           </section>
 
@@ -282,7 +352,7 @@ export default function Detail({ name }) {
                         <span className="evo__cond">{evoCondition(e.how)}</span>→
                       </span>
                     )}
-                    <a className={`evo__stage ${e.id === (s?.id || p.id) ? 'is-current' : ''}`} href={`#/p/${e.id}`}>
+                    <a className={`evo__stage ${e.id === cid ? 'is-current' : ''}`} href={`#/p/${e.id}`}>
                       <img loading="lazy" alt={pretty(e.name)}
                            src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${e.id}.png`}
                            onError={ev => { ev.target.onerror = null; ev.target.src = SPRITE(e.id) }} />
@@ -306,13 +376,8 @@ export default function Detail({ name }) {
           {moves.length > 0 && (
             <details className="moves">
               <summary>Moves learned by level-up <span>({moves.length})</span></summary>
-              <div className="moves__grid">
-                {moves.map(m => (
-                  <div className="move" key={m.name}>
-                    <span className="move__lv mono">{m.level > 0 ? `Lv ${m.level}` : '—'}</span>
-                    <span>{pretty(m.name)}</span>
-                  </div>
-                ))}
+              <div className="moves__list">
+                {moves.map(m => <MoveRow key={m.name} name={m.name} level={m.level} />)}
               </div>
             </details>
           )}
@@ -322,12 +387,9 @@ export default function Detail({ name }) {
   )
 }
 
-// Prev/next by national dex number (uses the species id, which is stable across forms).
-function speciesId(p) {
-  return Number(p.species.url.split('/').filter(Boolean).pop())
-}
+// Prev/next by national dex number (uses the species id, stable across forms).
 function prevNext(p) {
-  const id = speciesId(p)
+  const id = Number(p.species.url.split('/').filter(Boolean).pop())
   return (
     <>
       {id > 1 ? <a href={`#/p/${id - 1}`}>← {pad(id - 1)}</a> : <span>←</span>}

@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { api, idFromUrl, pretty, pad, TYPE, typeStyle, MAX_DEX, loadTypes } from './api.js'
+import { api, idFromUrl, pretty, pad, TYPE, typeStyle, MAX_DEX, loadTypes, REGIONS } from './api.js'
 import Card from './Card.jsx'
+import { useCaughtStore, caughtCount, isCaught } from './caught.js'
 
 const PAGE = 36
 let listCache = null   // full name list, kept across mounts
 
-export default function Index({ query, setQuery, typeFilter, setTypeFilter, shown, setShown }) {
+export default function Index({
+  query, setQuery, typeFilter, setTypeFilter,
+  region, setRegion, caughtOnly, setCaughtOnly, shown, setShown,
+}) {
   const [all, setAll] = useState(listCache || [])
   const [types, setTypes] = useState(null)   // { byId, byType }
+  const cv = useCaughtStore()                 // re-render + recompute when catches change
 
   useEffect(() => {
     if (!listCache) {
@@ -24,12 +29,17 @@ export default function Index({ query, setQuery, typeFilter, setTypeFilter, show
   const filtered = useMemo(() => {
     let set = all
     if (typeFilter && types) set = set.filter(m => types.byId.get(m.id)?.includes(typeFilter))
+    if (region) {
+      const r = REGIONS.find(x => x.id === region)
+      if (r) set = set.filter(m => m.id >= r.min && m.id <= r.max)
+    }
+    if (caughtOnly) set = set.filter(m => isCaught(m.id))
     if (query) {
       const q = query.toLowerCase().trim()
       set = set.filter(m => m.name.includes(q) || String(m.id) === q || pad(m.id).includes(q))
     }
     return set
-  }, [all, types, typeFilter, query])
+  }, [all, types, typeFilter, region, caughtOnly, query, cv])
 
   const waiting = !all.length || (typeFilter && !types)
   const page = filtered.slice(0, shown)
@@ -49,10 +59,8 @@ export default function Index({ query, setQuery, typeFilter, setTypeFilter, show
     return () => io.disconnect()
   }, [hasMore])
 
-  const onType = t => {
-    setTypeFilter(typeFilter === t ? null : t)
-    setShown(PAGE)
-  }
+  const onType = t => { setTypeFilter(typeFilter === t ? null : t); setShown(PAGE) }
+  const total = caughtCount()
 
   return (
     <>
@@ -62,19 +70,36 @@ export default function Index({ query, setQuery, typeFilter, setTypeFilter, show
           {waiting
             ? 'Scanning…'
             : `${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'}` +
-              (typeFilter ? ` · ${pretty(typeFilter)}` : '')}
+              (total ? ` · ${total} caught` : '')}
         </p>
       </div>
 
       <section className="controls">
-        <div className="search">
-          <label htmlFor="q">Search the guide</label>
-          <input
-            id="q" type="search" autoComplete="off" spellCheck="false"
-            placeholder="bulbasaur, 0025, char…"
-            value={query}
-            onChange={e => { setQuery(e.target.value); setShown(PAGE) }}
-          />
+        <div className="controls__row">
+          <div className="search">
+            <label htmlFor="q">Search</label>
+            <input
+              id="q" type="search" autoComplete="off" spellCheck="false"
+              placeholder="bulbasaur, 0025, char…"
+              value={query}
+              onChange={e => { setQuery(e.target.value); setShown(PAGE) }}
+            />
+          </div>
+          <div className="filter">
+            <label htmlFor="region">Region</label>
+            <select id="region" value={region || ''}
+                    onChange={e => { setRegion(e.target.value || null); setShown(PAGE) }}>
+              <option value="">All regions</option>
+              {REGIONS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+          </div>
+          <button
+            className={`caught-toggle ${caughtOnly ? 'is-on' : ''}`}
+            aria-pressed={caughtOnly}
+            onClick={() => { setCaughtOnly(!caughtOnly); setShown(PAGE) }}
+          >
+            <span className="ball" aria-hidden="true" /> Caught{total ? ` ${total}` : ''}
+          </button>
         </div>
         <div className="chips" role="group" aria-label="Filter by type">
           {Object.keys(TYPE).map(t => (
@@ -105,7 +130,7 @@ export default function Index({ query, setQuery, typeFilter, setTypeFilter, show
               <div className="empty">
                 <span className="ball" aria-hidden="true" />
                 <h3>No Pokémon found.</h3>
-                <p>Try another name, number, or type.</p>
+                <p>{caughtOnly ? 'You have not caught any matching this filter.' : 'Try another name, number, or type.'}</p>
               </div>
             )}
       </div>
