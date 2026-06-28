@@ -5,6 +5,7 @@ import {
   flavorEntries, evYield, formLabel, SPRITE, TYPE,
 } from './api.js'
 import { useCaughtStore, isCaught, toggleCaught } from './caught.js'
+import Ball from './Ball.jsx'
 
 const STAT_ABBR = {
   hp: 'HP', attack: 'Atk', defense: 'Def',
@@ -135,7 +136,7 @@ export default function Detail({ name }) {
       <>
         <div className="detail-top"><a className="back" href="#/">← Back to the guide</a></div>
         <div className="empty">
-          <span className="ball" aria-hidden="true" />
+          <Ball />
           <h3>{error}</h3>
           <p>Check the spelling, or browse the full guide instead.</p>
         </div>
@@ -264,7 +265,7 @@ export default function Detail({ name }) {
               aria-pressed={caught}
               onClick={() => toggleCaught(cid)}
             >
-              <span className="ball" aria-hidden="true" /> {caught ? 'Caught' : 'Catch'}
+              <Ball /> {caught ? 'Caught' : 'Catch'}
             </button>
             <div className="types">
               {p.types.map(t => (

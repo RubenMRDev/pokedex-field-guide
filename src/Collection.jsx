@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, idFromUrl, pretty, loadTypes, MAX_DEX, abilityEffect } from './api.js'
 import Card from './Card.jsx'
+import Ball from './Ball.jsx'
 
 // Every Pokémon that has a given ability.
 export default function Collection({ ability }) {
@@ -32,7 +33,7 @@ export default function Collection({ ability }) {
 
       {state === 'error' ? (
         <div className="empty">
-          <span className="ball" aria-hidden="true" />
+          <Ball />
           <h3>No ability called “{pretty(ability)}”.</h3>
         </div>
       ) : (

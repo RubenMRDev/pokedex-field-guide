@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Index from './Index.jsx'
 import Detail from './Detail.jsx'
 import Collection from './Collection.jsx'
+import Ball from './Ball.jsx'
 
 function parseFilters(hash) {
   const qi = hash.indexOf('?')
@@ -88,7 +89,7 @@ export default function App() {
           <span className="led led--g" />
         </div>
         <a className="brand" href="#/">
-          <span className="ball" aria-hidden="true" />
+          <Ball />
           <span className="brand__name">Pokédex</span>
         </a>
         <p className="hood__tag">National field guide<br />powered by PokéAPI</p>

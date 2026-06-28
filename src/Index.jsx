@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { api, idFromUrl, pretty, pad, TYPE, typeStyle, MAX_DEX, loadTypes, REGIONS } from './api.js'
 import Card from './Card.jsx'
+import Ball from './Ball.jsx'
 import { useCaughtStore, caughtCount, isCaught } from './caught.js'
 
 const PAGE = 36
@@ -98,7 +99,7 @@ export default function Index({
             aria-pressed={caughtOnly}
             onClick={() => { setCaughtOnly(!caughtOnly); setShown(PAGE) }}
           >
-            <span className="ball" aria-hidden="true" /> Caught{total ? ` ${total}` : ''}
+            <Ball /> Caught{total ? ` ${total}` : ''}
           </button>
         </div>
         <div className="chips" role="group" aria-label="Filter by type">
@@ -128,7 +129,7 @@ export default function Index({
             )
             : (
               <div className="empty">
-                <span className="ball" aria-hidden="true" />
+                <Ball />
                 <h3>No Pokémon found.</h3>
                 <p>{caughtOnly ? 'You have not caught any matching this filter.' : 'Try another name, number, or type.'}</p>
               </div>

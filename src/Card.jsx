@@ -1,5 +1,6 @@
 import { pad, pretty, typeStyle } from './api.js'
 import PokeImg from './PokeImg.jsx'
+import Ball from './Ball.jsx'
 import { isCaught, toggleCaught } from './caught.js'
 
 // Index/collection grid tile, coloured by primary type. Parent subscribes to the
@@ -15,7 +16,7 @@ export default function Card({ id, name, types = [] }) {
         title={caught ? 'Caught — click to release' : 'Mark as caught'}
         onClick={e => { e.preventDefault(); e.stopPropagation(); toggleCaught(id) }}
       >
-        <span className="ball" aria-hidden="true" />
+        <Ball />
       </button>
       <div className="art"><PokeImg id={id} alt={pretty(name)} lazy /></div>
       <h3 className="name">{pretty(name)}</h3>
