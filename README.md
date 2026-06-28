@@ -1,5 +1,7 @@
 # Pokédex field guide
 
+**Live demo → [pokedex-field-guide.vercel.app](https://pokedex-field-guide.vercel.app)**
+
 An illustrated Pokédex built as the red scanning device itself: drenched red shell, glossy blue lens, status LEDs and a recessed screen. Powered by the free [PokéAPI](https://pokeapi.co/).
 
 Built with **React + Vite**, no UI framework, hash routing, all data fetched live from PokéAPI.
