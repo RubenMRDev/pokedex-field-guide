@@ -3,6 +3,7 @@ import { api, idFromUrl, pretty, pad, TYPE, typeStyle, MAX_DEX, loadTypes, REGIO
 import Card from './Card.jsx'
 import Ball from './Ball.jsx'
 import { useCaughtStore, caughtCount, isCaught } from './caught.js'
+import { maybeStartTour } from './tour.js'
 
 const PAGE = 36
 let listCache = null   // full name list, kept across mounts
@@ -60,6 +61,15 @@ export default function Index({
     return () => io.disconnect()
   }, [hasMore])
 
+  // First-visit onboarding tour (driver.js), once the grid has rendered.
+  const tourRan = useRef(false)
+  useEffect(() => {
+    if (tourRan.current || waiting || !page.length) return
+    tourRan.current = true
+    const t = setTimeout(maybeStartTour, 600)
+    return () => clearTimeout(t)
+  }, [waiting, page.length])
+
   const onType = t => { setTypeFilter(typeFilter === t ? null : t); setShown(PAGE) }
   const total = caughtCount()
 
@@ -71,7 +81,7 @@ export default function Index({
           {waiting
             ? 'Scanning…'
             : `${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'}` +
-              (total ? ` · ${total} caught` : '')}
+              (total ? ` · ${total} favourite${total === 1 ? '' : 's'}` : '')}
         </p>
       </div>
 
@@ -99,7 +109,7 @@ export default function Index({
             aria-pressed={caughtOnly}
             onClick={() => { setCaughtOnly(!caughtOnly); setShown(PAGE) }}
           >
-            <Ball /> Caught{total ? ` ${total}` : ''}
+            <Ball /> Favourites{total ? ` ${total}` : ''}
           </button>
         </div>
         <div className="chips" role="group" aria-label="Filter by type">
@@ -131,7 +141,7 @@ export default function Index({
               <div className="empty">
                 <Ball />
                 <h3>No Pokémon found.</h3>
-                <p>{caughtOnly ? 'You have not caught any matching this filter.' : 'Try another name, number, or type.'}</p>
+                <p>{caughtOnly ? 'No favourites match this filter yet.' : 'Try another name, number, or type.'}</p>
               </div>
             )}
       </div>

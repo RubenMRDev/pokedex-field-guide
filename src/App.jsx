@@ -3,6 +3,7 @@ import Index from './Index.jsx'
 import Detail from './Detail.jsx'
 import Collection from './Collection.jsx'
 import Ball from './Ball.jsx'
+import { startTour } from './tour.js'
 
 function parseFilters(hash) {
   const qi = hash.indexOf('?')
@@ -92,7 +93,10 @@ export default function App() {
           <Ball />
           <span className="brand__name">Pokédex</span>
         </a>
-        <p className="hood__tag">National field guide<br />powered by PokéAPI</p>
+        <div className="hood__right">
+          <p className="hood__tag">National field guide<br />powered by PokéAPI</p>
+          <button className="hood__help" onClick={startTour} aria-label="Replay tour" title="Replay tour">?</button>
+        </div>
       </header>
 
       <main className="screen">

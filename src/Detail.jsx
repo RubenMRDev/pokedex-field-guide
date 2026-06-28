@@ -265,7 +265,7 @@ export default function Detail({ name }) {
               aria-pressed={caught}
               onClick={() => toggleCaught(cid)}
             >
-              <Ball /> {caught ? 'Caught' : 'Catch'}
+              <Ball /> {caught ? 'In favourites' : 'Favourite'}
             </button>
             <div className="types">
               {p.types.map(t => (

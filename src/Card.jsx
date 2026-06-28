@@ -13,7 +13,7 @@ export default function Card({ id, name, types = [] }) {
       <span className="dex mono">№ {pad(id)}</span>
       <button
         className="catch" aria-pressed={caught}
-        title={caught ? 'Caught — click to release' : 'Mark as caught'}
+        title={caught ? 'In favourites — click to remove' : 'Add to favourites'}
         onClick={e => { e.preventDefault(); e.stopPropagation(); toggleCaught(id) }}
       >
         <Ball />
